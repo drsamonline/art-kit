@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>art-kit — art primitives, from scratch</title>
+<style>
+  :root{--bg:#0e1116;--fg:#e8ecf1;--mut:#9aa3b2;--acc:#6ea8fe;--line:#222a35}
+  @media (prefers-color-scheme: light){:root{--bg:#f7f8fa;--fg:#171a21;--mut:#5a6272;--acc:#2b4fc8;--line:#e1e5ec}}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,Arial,sans-serif}
+  main{max-width:760px;margin:0 auto;padding:48px 22px}
+  h1{font-size:1.9rem;margin:0 0 .2em}
+  .sub{color:var(--mut);margin:0 0 1.6em}
+  code{background:var(--line);padding:2px 6px;border-radius:6px;font-size:.9em}
+  ul{padding-left:1.1em} li{margin:.3em 0}
+  a{color:var(--acc)}
+</style>
+</head>
+<body>
+<main>
+  <h1>art-kit</h1>
+  <p class="sub">The art primitives Forge was missing. Zero dependencies, one file, no assets.</p>
+  <h2>Two halves</h2>
+  <ul>
+    <li><strong>Static pixel art</strong> — indexed palette, pixel canvas with nearest-neighbour scaling, draw ops, delta undo, dithering, median-cut, sprite sheets, isometric.</li>
+    <li><strong>Live generative visuals</strong> — a frame loop you can run alone or drive from game-kit's timestep.</li>
+  </ul>
+  <p>Usage, the licence position, and the tests are in the <a href="https://github.com/drsamonline/art-kit#readme">README</a>. Tests: <code>node test-node.js</code>.</p>
+</main>
+</body>
+</html>
