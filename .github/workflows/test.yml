@@ -6,6 +6,13 @@ on:
   pull_request:
   workflow_dispatch: {}
 
+permissions:
+  contents: read      # explicit least privilege. With no `permissions:` a workflow
+                      # inherits the REPOSITORY default, which is an unrecorded setting
+                      # (82 of 83 repos are `read`, CLDR is `write`). Declaring it here
+                      # means a change to that default cannot silently grant this
+                      # workflow more than it needs. This workflow only reads.
+
 jobs:
   test:
     runs-on: ubuntu-latest
