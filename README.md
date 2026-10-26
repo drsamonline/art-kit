@@ -64,4 +64,4 @@ Covers the spec's required cases — a **nearest-neighbour scaling** case, a **d
 
 ## License
 
-MIT — see [LICENSE](LICENSE). © 2026 Dr Sohil Momin.
+PolyForm Noncommercial — see [LICENSE](LICENSE). © 2026 Dr Sohil Momin.
