@@ -2,6 +2,8 @@
 
 # art-kit
 
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-2e7d32)](LICENSE)
+
 **The art primitives Forge was missing.** Zero dependencies, one file, no assets.
 
 palette · pixel canvas · draw ops · undo · dithering · median-cut · sprite sheets · isometric · sketch loop
