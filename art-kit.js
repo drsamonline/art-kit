@@ -8,7 +8,7 @@
  * LIVE generative visuals (the sketch loop). Everything here is reimplemented from
  * published technique; permissive reference projects are named in comments only.
  *
- * MIT License. (c) 2026 Dr Sohil Momin.
+ * PolyForm Noncommercial 1.0.0. (c) 2026 Dr Sohil Momin.
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory();
