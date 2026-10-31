@@ -97,24 +97,6 @@
     if (e.key === "/") { var s = document.querySelector('input[type="search"], input[placeholder*="search" i], input[id*="search" i], input[placeholder*="filter" i], input[type="text"]'); if (s) { e.preventDefault(); s.focus(); if (s.select) s.select(); say("Search - Esc to leave"); } return; }
     if (e.key === "?") { e.preventDefault(); overlay(); }
   });
-  /* --- the buttons --- */
-  function add() {
-    if (!document.body || document.getElementById("__tools")) return;
-    var wrap = document.createElement("div"); wrap.id = "__tools";
-    wrap.style.cssText = "position:fixed;left:10px;bottom:10px;z-index:9998;display:flex;gap:6px;flex-wrap:wrap;max-width:70vw";
-    [["Save my data", window.__exportAll, "Download everything this app has stored, as JSON"],
-     ["Restore", window.__importAll, "Load a JSON backup and restore it"],
-     ["Undo", window.__undo, "Undo the last change (Ctrl+Z)"],
-     ["?", overlay, "Keyboard shortcuts"]].forEach(function (b) {
-      var el = document.createElement("button");
-      el.textContent = b[0]; el.title = b[2];
-      el.style.cssText = "background:#111;color:#eee;border:1px solid #444;border-radius:8px;padding:6px 10px;font:12px system-ui;cursor:pointer;opacity:.75";
-      el.onmouseenter = function () { el.style.opacity = "1"; }; el.onmouseleave = function () { el.style.opacity = ".75"; };
-      el.onclick = b[1]; wrap.appendChild(el);
-    });
-    document.body.appendChild(wrap);
-  }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", add); else add();
 })();
 </script>
 
