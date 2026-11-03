@@ -20,6 +20,11 @@
 <main>
   <h1>art-kit</h1>
   <p class="sub">The art primitives Forge was missing. Zero dependencies, one file, no assets.</p>
+<figure style="margin:26px 0 0;text-align:center">
+  <img src="assets/concept.svg" alt="A diagram of what this kit does"
+       style="width:100%;max-width:320px;height:auto">
+</figure>
+
   <h2>Two halves</h2>
   <ul>
     <li><strong>Static pixel art</strong> — indexed palette, pixel canvas with nearest-neighbour scaling, draw ops, delta undo, dithering, median-cut, sprite sheets, isometric.</li>
@@ -159,6 +164,18 @@ window.addEventListener("error", function () { window.__bootError = true; });
   .support-foot{margin:1.2rem 0 0;font-size:.8rem;color:var(--s-muted)}
   @media (prefers-reduced-motion:no-preference){.support-card{transition:border-color .15s ease}}
   .support-card:target,.support-card:focus-within{border-color:var(--s-accent)}
+
+  /* ---------- light theme ----------
+     Added so the page reads on paper. It overrides the page's own variables and
+     nothing else — no markup, no layout, no type. */
+  :root, html {
+    color-scheme: light;
+    --bg: #f7f6f2;
+    --fg: #14161a;
+    --mut: #5c6470;
+    --acc: #486fa8;
+    --line: #e2ddd2;
+  }
 </style>
 
 <section class="support" id="support" aria-labelledby="support-h" data-support>
