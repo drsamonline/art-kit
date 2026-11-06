@@ -30,6 +30,9 @@ Both, from one kit.
 | `dither` | ordered (Bayer) and Floyd–Steinberg |
 | `quantize` | median-cut to N colours, so a photo becomes pixel art |
 | `spriteSheet` / `sliceSprite` | a sheet + JSON atlas, with a slicing round-trip |
+| `tilemap` | a grid of tile ids (`-1` = no tile, so tile `0` stays legal): `get`/`set`, pixel→tile by **floor**, `fillRect`, a capped iterative `floodFill`, 4-bit `autotile` masks, and `toCanvas(tiles)` |
+| `anim` | a timeline over frames: `at(t)` is a **pure function of time**, `pingpong` without repeated endpoints, `fps 0` frozen instead of `NaN` |
+| `generate` | a **seeded** sprite generator (`Art.rng`, mulberry32) that is mirror-symmetric by construction, never empty, and rebuilds an asset folder from one number (`generateSet`) |
 | `iso` | the cartesian ↔ isometric coordinate mapping |
 | `sketch` | a setup-once / draw-every-frame loop |
 
@@ -49,6 +52,16 @@ hist.undo();
 
 var pal2 = Art.palette(Art.quantize(pixels, 16));       // median-cut a photo
 var sheet = Art.spriteSheet([frame0, frame1]);          // sheet + atlas
+
+// 1.1.0 — a level, its timeline, and a seeded creature to put in it
+var map = Art.tilemap({ w: 20, h: 12, tileW: 16, tileH: 16 });
+map.floodFill(0, 0, 1);                                 // lay a floor
+var walls = map.autotile();                             // N=1 E=2 S=4 W=8 per tile
+var level = map.toCanvas(tileCanvases);                 // compose it into one canvas
+
+var hero = Art.generate({ seed: 2026, w: 16, h: 16, density: 0.8 });
+var walk = Art.anim([hero, Art.generate({ seed: 77, w: 16, h: 16 })], { fps: 8, pingpong: true });
+walk.at(0.3);                                           // the frame for that moment, always
 ```
 
 ## Licence position (read this)
@@ -59,10 +72,12 @@ Everything here is **reimplemented from published technique**; permissive refere
 
 ```
 node test-node.js
-31 passed, 0 failed
+86 passed, 0 failed
 ```
 
-Covers the spec's required cases — a **nearest-neighbour scaling** case, a **dithering pattern** case, a **median-cut** case with a known input, and a **sprite-sheet export round-trip** — plus the palette, every draw op, the bounded delta undo stack, the isometric mapping and the sketch loop. All headless.
+Covers the spec's required cases — a **nearest-neighbour scaling** case, a **dithering pattern** case, a **median-cut** case with a known input, a **sprite-sheet export round-trip**, a **tilemap** case (floor, flood-fill bounds, autotile masks), a **timeline** case (pure `at(t)`, pingpong without repeated endpoints) and a **procedural sprite** case (same seed, same sprite; mirror symmetry; never empty) — plus the palette, every draw op, the bounded delta undo stack, the isometric mapping and the sketch loop. All headless.
+
+The 1.1.0 additions were **mutation-tested ten ways** and all ten are caught by an assertion (floor→truncate in `at`, a flood fill that re-fills, swapped E/W autotile bits, `toCanvas` ignoring the tile id, pingpong repeating its endpoints, rounded instead of floored time, mirroring only on even widths, dropping the non-empty guarantee, ignoring the body shape, and `Art.version` drifting from `VERSION`).
 
 ## Support
 

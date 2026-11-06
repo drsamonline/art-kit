@@ -16,7 +16,7 @@
 }(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  var Art = { version: "0.1.0" };
+  var Art = { version: "1.1.0" };
 
   function parseHex(s) {
     s = String(s).trim().replace(/^#/, "");
@@ -292,6 +292,225 @@
     var out = Art.canvas(frame.w, frame.h, sheet.palette);
     for (var y = 0; y < frame.h; y++) for (var x = 0; x < frame.w; x++) out.data[y * frame.w + x] = sheet.data[(frame.y + y) * sheet.w + (frame.x + x)];
     return out;
+  };
+
+  /* ------------------------------------------------------------ tilemap */
+  /* A grid of tile ids. Int16Array, not Uint8Array: -1 is "no tile" and tile 0
+     has to stay a legal tile, or every map's first tile is invisible.
+     `toCanvas(tiles)` composes the grid out of tile canvases; an empty tile
+     leaves the destination alone so a background layer shows through. */
+  Art.tilemap = function (opts) {
+    opts = opts || {};
+    var w = Math.max(0, opts.w | 0), h = Math.max(0, opts.h | 0);
+    var data = new Int16Array(w * h);
+    data.fill(-1);
+    if (opts.data && opts.data.length === data.length) data.set(opts.data);
+    var api = {
+      w: w, h: h,
+      tileW: Math.max(1, opts.tileW | 0 || 16),
+      tileH: Math.max(1, opts.tileH | 0 || 16),
+      data: data,
+      get: function (tx, ty) {
+        if (tx < 0 || ty < 0 || tx >= w || ty >= h) return -1;
+        return data[(ty | 0) * w + (tx | 0)];
+      },
+      /* false off the map: a brush at the edge stops at the edge, it does not
+         resize the map under the artist */
+      set: function (tx, ty, v) {
+        if (tx < 0 || ty < 0 || tx >= w || ty >= h) return false;
+        data[(ty | 0) * w + (tx | 0)] = v | 0;
+        return true;
+      },
+      /* pixel -> tile by FLOOR. Truncation puts a click at x = -1 into column 0,
+         which is the bug that makes a cursor paint the wrong cell at the edge. */
+      at: function (px, py) { return { tx: Math.floor(px / api.tileW), ty: Math.floor(py / api.tileH) }; },
+      fillRect: function (tx, ty, tw, th, v) {
+        var n = 0;
+        for (var y = ty; y < ty + th; y++) for (var x = tx; x < tx + tw; x++) if (api.set(x, y, v)) n++;
+        return n;
+      },
+      /* Iterative, and capped. A recursive fill on an empty 512x512 map is a
+         stack overflow in the tab; the cap returns a partial fill and a count
+         instead of a dead page. Empty space (-1) IS fillable — laying a floor
+         on an empty map is the first thing anyone does. */
+      floodFill: function (tx, ty, v, o) {
+        var cap = (o && o.max) || 1e6;
+        if (tx < 0 || ty < 0 || tx >= w || ty >= h) return 0;
+        var from = api.get(tx, ty);
+        if (from === v) return 0;
+        var stack = [[tx, ty]], n = 0;
+        while (stack.length && n < cap) {
+          var p = stack.pop(), x = p[0], y = p[1];
+          /* bounds first: off the map answers -1, which IS the empty tile, so a
+             fill without this walks outside the map forever */
+          if (x < 0 || y < 0 || x >= w || y >= h) continue;
+          if (api.get(x, y) !== from) continue;
+          if (!api.set(x, y, v)) continue;
+          n++;
+          stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+        }
+        return n;
+      },
+      /* 4-bit neighbour mask per tile: N=1, E=2, S=4, W=8, so a tile id can be
+         chosen from the mask. An empty tile reports -1. */
+      autotile: function (o) {
+        var match = (o && o.match) || function (a, b) { return a === b && a >= 0; };
+        var out = new Array(w * h);
+        for (var y = 0; y < h; y++) {
+          for (var x = 0; x < w; x++) {
+            var v = api.get(x, y);
+            if (v < 0) { out[y * w + x] = -1; continue; }
+            var mask = 0;
+            if (match(v, api.get(x, y - 1))) mask |= 1;
+            if (match(v, api.get(x + 1, y))) mask |= 2;
+            if (match(v, api.get(x, y + 1))) mask |= 4;
+            if (match(v, api.get(x - 1, y))) mask |= 8;
+            out[y * w + x] = mask;
+          }
+        }
+        return out;
+      },
+      toCanvas: function (tiles, target) {
+        var out = target || Art.canvas(w * api.tileW, h * api.tileH,
+          (tiles[0] && tiles[0].palette) || Art.palette(["000000"]));
+        for (var y = 0; y < h; y++) {
+          for (var x = 0; x < w; x++) {
+            var id = api.get(x, y), t = id >= 0 ? tiles[id] : null;
+            if (!t) continue;
+            for (var ty = 0; ty < api.tileH; ty++) {
+              for (var tx = 0; tx < api.tileW; tx++) {
+                var v = t.data[ty * t.w + tx];
+                out.data[(y * api.tileH + ty) * out.w + (x * api.tileW + tx)] = v;
+              }
+            }
+          }
+        }
+        return out;
+      }
+    };
+    return api;
+  };
+
+  /* ------------------------------------------------------------ animation */
+  /* A timeline over frames. at(t) is a PURE function of time, so an animation
+     never depends on how many times it was drawn — the bug that makes a
+     background tab come back mid-swing.
+     pingpong does not repeat the endpoints (0,1,2,1,0,…): repeating them makes
+     the pause at each end twice as long as every frame in the middle. */
+  Art.anim = function (frames, opts) {
+    opts = opts || {};
+    var count = typeof frames === "number" ? frames : (frames || []).length;
+    var fps = opts.fps == null ? 8 : opts.fps;
+    var loop = opts.loop !== false, ping = !!opts.pingpong;
+    var period = ping ? Math.max(1, count * 2 - 2) : count;
+    var api = {
+      count: count, fps: fps, loop: loop, pingpong: ping,
+      duration: function () { return fps > 0 ? period / fps : Infinity; },
+      at: function (t) {
+        if (!count) return -1;
+        if (!(fps > 0)) return 0;                 /* a frozen timeline, not NaN */
+        if (!(t > 0)) return 0;                   /* negative time is frame 0 */
+        var step = Math.floor(t * fps);
+        if (!loop) return step >= count ? count - 1 : step;
+        var i = step % period;
+        return ping && i >= count ? period - i : i;
+      },
+      frame: function (t) { return typeof frames === "number" ? api.at(t) : frames[api.at(t)]; },
+      /* the first n frame indexes, which is what a test or a GIF export wants */
+      sequence: function (n) {
+        var out = [];
+        for (var k = 0; k < (n == null ? period : n); k++) out.push(api.at(k / (fps || 1)));
+        return out;
+      }
+    };
+    return api;
+  };
+
+  /* ------------------------------------------------------------ generate */
+  /* mulberry32: 32 bits of state, the same sequence everywhere. A sprite that
+     changes on every reload is not a seed. */
+  Art.rng = function (seed) {
+    var s = (seed | 0) || 1;
+    var api = {
+      next: function () {
+        s |= 0; s = (s + 0x6D2B79F5) | 0;
+        var t = Math.imul(s ^ (s >>> 15), 1 | s);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      },
+      int: function (n) { return Math.floor(api.next() * n); },
+      pick: function (arr) { return arr[api.int(arr.length)]; },
+      chance: function (p) { return api.next() < p; }
+    };
+    return api;
+  };
+
+  /* A seeded, mirrored sprite on an indexed canvas. Only the left half is
+     generated and then copied, so symmetry is a property of the construction
+     and not a post-pass that drifts by a column on an odd width.
+     Index 0 is EMPTY by convention (the canvas has no alpha); painted pixels
+     come from 1..size-1 unless opts.lo/opts.hi say otherwise. */
+  Art.generate = function (opts) {
+    opts = opts || {};
+    var w = Math.max(2, opts.w | 0 || 16), h = Math.max(1, opts.h | 0 || 16);
+    var pal = opts.palette || Art.palette("1a1c2c 5d275d b13e53 ef7d57 ffd166");
+    var r = Art.rng(opts.seed == null ? 1 : opts.seed);
+    var density = opts.density == null ? 0.45 : opts.density;
+    var empty = opts.empty == null ? 0 : opts.empty | 0;
+    var lo = Math.max(0, opts.lo == null ? 0 : opts.lo | 0);
+    var hi = opts.hi == null ? pal.size - 1 : opts.hi | 0;
+    if (hi <= lo) hi = Math.min(pal.size - 1, lo + 1);
+    var body = opts.shape !== "fill";
+    var cx0 = (w - 1) / 2, cy0 = (h - 1) / 2, rx = Math.max(0.5, w / 2), ry = Math.max(0.5, h / 2);
+    var img = Art.canvas(w, h, pal, empty);
+    var half = Math.ceil(w / 2), painted = 0;
+    for (var y = 0; y < h; y++) {
+      for (var x = 0; x < half; x++) {
+        var p = density;
+        if (body) {
+          /* fade the chance out towards the ellipse: a sprite that reads as a
+             creature rather than as static inside a square */
+          var dx = (x - cx0) / rx, dy = (y - cy0) / ry, rad = Math.sqrt(dx * dx + dy * dy);
+          if (rad > 1) continue;
+          p = density * (1.25 - 0.75 * rad);
+        }
+        if (!r.chance(p)) continue;
+        var v = lo + r.int(hi - lo + 1);
+        img.data[y * w + x] = v; painted++;
+        var mx = w - 1 - x;
+        if (mx !== x) img.data[y * w + mx] = v;
+      }
+    }
+    /* A generator that can return an empty sprite makes every caller handle
+       "nothing was drawn"; one guaranteed pixel is cheaper than that branch. */
+    if (!painted) {
+      var cx = (w / 2) | 0, cyy = (h / 2) | 0;
+      img.data[cyy * w + cx] = hi;
+      if (w - 1 - cx !== cx) img.data[cyy * w + (w - 1 - cx)] = hi;
+    }
+    return img;
+  };
+
+  /* The nth sprite of a seed is the same nth sprite always, so an app can
+     rebuild its whole asset folder from one number. */
+  Art.generateSet = function (seed, n, opts) {
+    var out = [], o = {}, k;
+    for (k in (opts || {})) if (Object.prototype.hasOwnProperty.call(opts, k)) o[k] = opts[k];
+    for (var i = 0; i < (n | 0); i++) {
+      o.seed = ((seed | 0) * 2654435761 + i * 40503) | 0;
+      out.push(Art.generate(o));
+    }
+    return out;
+  };
+
+  /* "Symmetric" is a claim; this makes it a check the caller can run. */
+  Art.isSymmetric = function (canvas) {
+    for (var y = 0; y < canvas.h; y++) {
+      for (var x = 0; x < canvas.w; x++) {
+        if (canvas.data[y * canvas.w + x] !== canvas.data[y * canvas.w + (canvas.w - 1 - x)]) return false;
+      }
+    }
+    return true;
   };
 
   /* ---------------------------------------------------------- isometric */
