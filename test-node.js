@@ -30,6 +30,15 @@ ok("canvas: rect outline leaves the middle empty", c3.get(0, 0) === 1 && c3.get(
 var c4 = Art.canvas(9, 9, bw);
 c4.ellipse(4, 4, 4, 4, 1, true);
 ok("canvas: filled ellipse has a centre and no corners", c4.get(4, 4) === 1 && c4.get(0, 0) === 0);
+// A radius-2 circle is 1,3,5,3,1 pixels wide. Rounding the half-width up made
+// it 1,5,5,5,1 — a plus sign, not a circle.
+(function () {
+  const P = Art.palette(["#000000", "#ffffff"]);
+  const e = Art.canvas(5, 5, P, 0);
+  e.ellipse(2, 2, 2, 2, 1, true);
+  const widths = [0, 1, 2, 3, 4].map((y) => [0, 1, 2, 3, 4].filter((x) => e.get(x, y) === 1).length);
+  ok("canvas: a radius-2 filled ellipse is 1,3,5,3,1 wide", widths.join(",") === "1,3,5,3,1", widths.join(","));
+})();
 var c5 = Art.canvas(8, 8, bw);
 c5.rect(0, 0, 8, 8, 0, true);
 c5.rect(2, 2, 4, 4, 1, true);

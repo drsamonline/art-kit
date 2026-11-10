@@ -104,13 +104,17 @@
       return api;
     };
     api.ellipse = function (cx, cy, rx, ry, i, filled) {
+      // floor, not round: the half-width at dy is rx*sqrt(1-(dy/ry)^2), and a pixel
+      // whose centre falls outside that is outside the ellipse. Rounding up made a
+      // radius-2 circle 5 px wide at every row but the ends — a plus sign, not a
+      // circle — which is the one shape a pixel-art tool must get right.
       for (var y = -ry; y <= ry; y++) {
-        var dx = Math.round(rx * Math.sqrt(Math.max(0, 1 - (y * y) / (ry * ry))));
+        var dx = Math.floor(rx * Math.sqrt(Math.max(0, 1 - (y * y) / (ry * ry))));
         if (filled) { for (var x = -dx; x <= dx; x++) paint(cx + x, cy + y, i); }
         else { paint(cx - dx, cy + y, i); paint(cx + dx, cy + y, i); }
       }
       if (!filled) for (var xx = -rx; xx <= rx; xx++) {
-        var dy = Math.round(ry * Math.sqrt(Math.max(0, 1 - (xx * xx) / (rx * rx))));
+        var dy = Math.floor(ry * Math.sqrt(Math.max(0, 1 - (xx * xx) / (rx * rx))));
         paint(cx + xx, cy - dy, i); paint(cx + xx, cy + dy, i);
       }
       return api;
