@@ -22,8 +22,8 @@ Art.palette(...)
 | `Art.toRGBA` | `(canvas)` | expand an index canvas to RGBA bytes, for a canvas/ImageData |
 | `Art.history` | `(canvas, opts)` | — |
 | `Art.dither` | `()` | — |
-| `Art.quantize` | `(pixels, n)` | Median-cut to N colours, so a photo becomes pixel art. |
-| `Art.spriteSheet` | `(frames)` | Frames as one sheet + a JSON atlas, with a slice that round-trips. |
+| `Art.quantize` | `(pixels, n)` | --------------------------------------------------------- quantise Median-cut to N colours, so a photo becomes pixel art. |
+| `Art.spriteSheet` | `(frames)` | ------------------------------------------------------- sprite sheet Frames as one sheet + a JSON atlas, with a slice that round-trips. |
 | `Art.sliceSprite` | `(sheet, frame)` | — |
 | `Art.tilemap` | `(opts)` | — |
 | `Art.anim` | `(frames, opts)` | — |
