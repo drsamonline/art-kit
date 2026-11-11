@@ -8,7 +8,8 @@ that is not there.
 
 ```js
 <script src="art-kit.js"></script>
-Art.palette  // or: const Art = require('./art-kit.js')
+Art.palette(...)
+// or: const Art = require('./art-kit.js')
 ```
 
 ## The surface (17 entries)
@@ -17,19 +18,19 @@ Art.palette  // or: const Art = require('./art-kit.js')
 |---|---|---|
 | `Art.palette` | `(input)` | — |
 | `Art.canvas` | `(w, h, palette, fill)` | — |
-| `Art.scale` | `(canvas, factor)` | nearest-neighbour scaling — the classic trap is smoothing it; we never do */ |
-| `Art.toRGBA` | `(canvas)` | expand an index canvas to RGBA bytes, for a canvas/ImageData */ |
+| `Art.scale` | `(canvas, factor)` | nearest-neighbour scaling — the classic trap is smoothing it; we never do |
+| `Art.toRGBA` | `(canvas)` | expand an index canvas to RGBA bytes, for a canvas/ImageData |
 | `Art.history` | `(canvas, opts)` | — |
 | `Art.dither` | `()` | — |
-| `Art.quantize` | `(pixels, n)` | --------------------------------------------------------- quantise */ Median-cut to N colours, so a photo becomes pixel art. */ |
-| `Art.spriteSheet` | `(frames)` | ------------------------------------------------------- sprite sheet */ Frames as one sheet + a JSON atlas, with a slice that round-trips. */ |
+| `Art.quantize` | `(pixels, n)` | Median-cut to N colours, so a photo becomes pixel art. |
+| `Art.spriteSheet` | `(frames)` | Frames as one sheet + a JSON atlas, with a slice that round-trips. |
 | `Art.sliceSprite` | `(sheet, frame)` | — |
 | `Art.tilemap` | `(opts)` | — |
 | `Art.anim` | `(frames, opts)` | — |
 | `Art.rng` | `(seed)` | — |
 | `Art.generate` | `(opts)` | — |
 | `Art.generateSet` | `(seed, n, opts)` | — |
-| `Art.isSymmetric` | `(canvas)` | "Symmetric" is a claim; this makes it a check the caller can run. */ |
+| `Art.isSymmetric` | `(canvas)` | "Symmetric" is a claim; this makes it a check the caller can run. |
 | `Art.iso` | `()` | — |
 | `Art.sketch` | `(opts)` | — |
 
